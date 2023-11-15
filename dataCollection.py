@@ -2,6 +2,7 @@ import cv2
 from cvzone.HandTrackingModule import HandDetector
 import numpy as np
 import math
+import tensorflow as tf
 
 cap = cv2.VideoCapture(1)
 detector = HandDetector(maxHands=2)
@@ -43,3 +44,9 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
+
+# Loading models
+interpreter = tf.lite.Interpreter(model_path="ASL_Model/model.tflite")
+interpreter.allocate_tensors()
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
