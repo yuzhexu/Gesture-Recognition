@@ -1,67 +1,60 @@
+
 import cv2
 from cvzone.HandTrackingModule import HandDetector
+from cvzone.ClassificationModule import Classifier
 import numpy as np
 import math
-import tensorflow as tf
+import time
 
-cap = cv2.VideoCapture(1)
-detector = HandDetector(maxHands=2)
+cap = cv2.VideoCapture(0)  # ID number of our webcam is 0
+detector = HandDetector(maxHands=1)  # Detection of 1 hand at a time
+classifier = Classifier("C:\\Users\harsh\PycharmProjects\GestureDetection\Model\keras_model.h5",
+                        "C:\\Users\harsh\PycharmProjects\GestureDetection\Model\labels.txt")
 
-offset = 20
-imgsize = 300
+offset = 20  # Offset to have more pixels for clear identification of data
+imgsize = 300  # bound size for the image
+counter = 0  # for calculating no of images captured
+labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+          'W', 'X', 'Y', 'Z']
 
 while True:
     success, img = cap.read()
+    imgOutput = img.copy()
     hands, img = detector.findHands(img)
-
-    # Create two blank images for displaying
-    imgLeft = np.zeros((imgsize, imgsize, 3), np.uint8)
-    imgRight = np.zeros((imgsize, imgsize, 3), np.uint8)
-
     if hands:
-        for hand in hands:
-            x, y, width, height = hand['bbox']
-            x1, y1 = max(x - offset, 0), max(y - offset, 0)
-            x2, y2 = min(x + width + offset, img.shape[1]), min(y + height + offset, img.shape[0])
-            imgCrop = img[y1:y2, x1:x2]
+        hand = hands[0]
+        x, y, width, height = hand['bbox']  # bounding box
+        imgWhite = np.ones((imgsize, imgsize, 3), np.uint8) * 255  # multiply by 255 to make image white
+        imgCrop = img[y - offset:y + height + offset, x - offset:x + width + offset]
 
-            if imgCrop.size == 0:
-                continue
+        imgCropShape = imgCrop.shape
 
-            # Update the corresponding window according to the type of hand
-            if hand['type'] == 'Left':
-                imgLeft = cv2.resize(imgCrop, (imgsize, imgsize))
-            elif hand['type'] == 'Right':
-                imgRight = cv2.resize(imgCrop, (imgsize, imgsize))
+        aspectRatio = height / width
 
-    # Show left and right hand windows
-    cv2.imshow("Left Hand", imgLeft)
-    cv2.imshow("Right Hand", imgRight)
+        if aspectRatio > 1:
+            const = imgsize / height
+            widthCal = math.ceil(const * width)
+            imgResize = cv2.resize(imgCrop, (widthCal, imgsize))
+            imgResizeShape = imgResize.shape
+            widthGap = math.ceil((imgsize - widthCal) / 2)
+            imgWhite[:, widthGap: widthCal + widthGap] = imgResize
+            prediction, index = classifier.getPrediction(imgWhite, draw=False)
 
-    cv2.imshow("Image", img)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
 
-cap.release()
-cv2.destroyAllWindows()
 
-# Loading models
-interpreter = tf.lite.Interpreter(model_path="ASL_Model/model.tflite")
-interpreter.allocate_tensors()
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
-# Assume img is an image captured from the camera
-# Resize the image to match the model input
-img_resized = cv2.resize(img, (512, 512)) # Resize according to model requirements
+        else:
+            const = imgsize / width
+            heightCal = math.ceil(const * height)
+            imgResize = cv2.resize(imgCrop, (imgsize, heightCal))
+            imgResizeShape = imgResize.shape
+            heightGap = math.ceil((imgsize - heightCal) / 2)
+            imgWhite[heightGap: heightCal + heightGap, :] = imgResize
+            prediction, index = classifier.getPrediction(imgWhite, draw=False)
 
-# Normalize pixel values
-img_normalized = img_resized / 255.0 # Assume normalized to 0-1 range
-
-# Preprocessed image
-input_data = np.expand_dims(img_normalized, axis=0).astype(np.float32)
-
-# Run model inference
-interpreter.set_tensor(input_details[0]['index'], input_data)
-interpreter.invoke()
-# Get the model output
-output_data = interpreter.get_tensor(output_details[0]['index'])
+        cv2.putText(imgOutput, labels[index], (x, y - 20), cv2.FONT_HERSHEY_COMPLEX, 2, (255, 0, 255), 2)
+        cv2.rectangle(imgOutput, (x, y), (x + width, y + height), (255, 0, 255), 4)
+        cv2.imshow("ImageCrop", imgCrop)
+        cv2.imshow("ImageWhite", imgWhite)
+    cv2.imshow("Image", imgOutput)
+    key = cv2.waitKey(1)  # Delay of 1ms in capturing image
+>>>>>>> 604078318fc95d886b9c55c830146d104985eb89
