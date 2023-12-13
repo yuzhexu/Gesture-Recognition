@@ -16,7 +16,7 @@ Set hands landmark and using gesture control mouse
 ### Feature
 ASL recognition</br>
 Viturl Mouse</br>
-  Only move mouse when index and middle finger up</br>
-  Only index finger up to imply left mouse click</br>
-  only middle finger up to imply right mouse click</br>
-  Bring the index finger and middle finger together to achieve a double click</br>
+   -Only move mouse when index and middle finger up</br>
+   -Only index finger up to imply left mouse click</br>
+   -only middle finger up to imply right mouse click</br>
+   -Bring the index finger and middle finger together to achieve a double click</br>
